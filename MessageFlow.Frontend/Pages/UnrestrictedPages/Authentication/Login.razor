@@ -1,0 +1,73 @@
+﻿@page "/Accounts/Login"
+@layout Pages.Shared.Layout.PublicSubLayout
+@rendermode RenderMode.InteractiveWebAssembly
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<section class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+        <h3 class="text-center mb-4">Login to MessageFlow</h3>
+
+        @if (isLoggingIn)
+        {
+            <LoadingIndicator Message="Logging you in..." IsDark="false" />
+        }
+        else
+        {
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            <EditForm Model="loginModel" OnValidSubmit="LoginUser">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />
+                    <ValidationMessage For="() => loginModel.Username" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <InputText type="password" id="password" class="form-control" @bind-Value="loginModel.Password" />
+                    <ValidationMessage For="() => loginModel.Password" class="text-danger" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Login</button>
+            </EditForm>
+        }
+
+    </div>
+</section>
+
+@code {
+    private LoginDTO loginModel = new();
+    private string errorMessage = "";
+    private bool isLoggingIn = false;
+
+    private async Task LoginUser()
+    {
+        isLoggingIn = true;
+        errorMessage = "";
+
+        var (success, redirectUrl, err) = await AuthService.LoginAsync(loginModel);
+
+        if (success)
+        {
+            Navigation.NavigateTo(redirectUrl);
+        }
+        else if (!string.IsNullOrEmpty(redirectUrl) && redirectUrl != "/Accounts/Login")
+        {
+            Navigation.NavigateTo(redirectUrl);
+        }
+        else
+        {
+            errorMessage = err;
+            isLoggingIn = false;
+        }
+    }
+}

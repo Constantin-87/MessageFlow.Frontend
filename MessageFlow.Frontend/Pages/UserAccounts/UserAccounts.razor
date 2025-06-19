@@ -1,0 +1,119 @@
+﻿@page "/Accounts/UserAccounts"
+@attribute [Authorize(Roles = "Admin, SuperAdmin")]
+@rendermode RenderMode.InteractiveWebAssembly
+@layout Pages.Shared.Layout.PrivateSubLayout
+@inject NavigationManager NavigationManager
+@inject UserManagementService UserManagementService
+
+<!-- Notification Modal -->
+<Notification Result="@Notification" />
+
+<!-- Confirmation Modal -->
+<ConfirmationModal IsVisible="@showDeleteConfirmation"
+                   Title="Confirm Delete"
+                   Message="@($"Are you sure you want to delete the user {userNameToDelete}?")"
+                   OnConfirm="DeleteUser"
+                   OnCancel="CancelDelete" />
+
+<h3>User Accounts</h3>
+
+<!-- Button to create a new user account -->
+<button class="btn btn-primary mb-3" @onclick="NavigateToCreateUser">Create New User Account</button>
+
+<!-- Table to display the user accounts -->
+@if (users == null)
+{
+    <LoadingIndicator Message="Fetching user data..." IsDark="false" />
+}
+else if (users.Count == 0)
+{
+    <p>No user accounts available.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Company Name</th>
+                <th>Role</th>
+                <th>Teams</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.UserName</td>
+                    <td>@user.UserEmail</td>
+                    <td>@user.PhoneNumber</td>
+                    <td>@(user.CompanyDTO?.CompanyName ?? "N/A")</td>
+                    <td>@user.Role</td>
+                    <td>@string.Join(", ", user.TeamsDTO?.Select(t => t.TeamName) ?? new List<string>())</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => NavigateToEditUser(user.Id)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(user.Id, user.UserName)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ApiNotificationResultVM? Notification;
+    private List<ApplicationUserDTO> users;
+    private bool showDeleteConfirmation = false;
+    private string? userIdToDelete;
+    private string? userNameToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        users = await UserManagementService.GetUsersAsync();
+    }
+
+    private void NavigateToCreateUser()
+    {
+        NavigationManager.NavigateTo("/Accounts/Create-user");
+    }
+
+    private void NavigateToEditUser(string userId)
+    {
+        NavigationManager.NavigateTo($"/Accounts/Edit-user/{userId}");
+    }
+
+    private void ConfirmDelete(string userId, string userName)
+    {
+        userIdToDelete = userId;
+        userNameToDelete = userName;
+        showDeleteConfirmation = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirmation = false;
+        userIdToDelete = null;
+        userNameToDelete = null;
+    }
+
+    private async Task DeleteUser()
+    {
+        showDeleteConfirmation = false;
+
+        var result = await UserManagementService.DeleteUserAsync(userIdToDelete);
+
+        if (result.IsSuccess)
+        {
+            users = users.Where(u => u.Id != userIdToDelete).ToList();
+        }
+
+        Notification = result;
+
+        userIdToDelete = null;
+        userNameToDelete = null;
+    }
+}

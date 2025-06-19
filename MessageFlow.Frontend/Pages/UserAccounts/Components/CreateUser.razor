@@ -1,0 +1,29 @@
+﻿@page "/Accounts/Create-user"
+@attribute [Authorize(Roles = "Admin, SuperAdmin")]
+@layout Pages.Shared.Layout.PrivateSubLayout
+@rendermode RenderMode.InteractiveWebAssembly
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create User</PageTitle>
+
+<!-- Notification Modal -->
+<Notification Result="@Notification" />
+
+<!-- Call the UserForm component and handle submission within the form -->
+<UserAddEditForm IsEditMode="false" OnValidSubmit="AddUser" />
+
+@code {
+    private ApiNotificationResultVM? Notification;
+
+    private async Task AddUser(ApiNotificationResultVM result)
+    {
+        Notification = result;
+        StateHasChanged();
+
+        if (Notification.IsSuccess)
+        {
+            await Task.Delay(3000);
+            NavigationManager.NavigateTo("/Accounts/UserAccounts");
+        }
+    }
+}

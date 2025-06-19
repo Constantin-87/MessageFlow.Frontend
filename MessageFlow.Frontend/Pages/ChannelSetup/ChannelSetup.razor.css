@@ -1,0 +1,40 @@
+﻿.form-select {
+    max-width: 200px;
+}
+.container {
+    margin-left: 0;
+    margin-right: auto;
+    padding: 0;
+}
+
+.card-body h5 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.settings-form {
+    min-width: 700px;
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+    background-color: var(--bg-mid);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.channel-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+    .channel-title img {
+        height: 56px;
+    }
+
+.collapsed-card {
+    min-width: 300px;
+    margin-bottom: 1rem;
+}

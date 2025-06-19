@@ -1,0 +1,42 @@
+﻿.team-members {
+    flex: 0 0 30%;
+    background-color: var(--bg-light);
+    color: var(--text-info);
+    padding: 1rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+    font-family: Arial, sans-serif;
+    height: 60%;
+}
+
+.team-members {
+    text-align: center;
+    color: var(--text-info);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+.team-group {
+    margin-bottom: 1rem;
+}
+
+    .team-group button {
+        width: 100%;
+    }
+
+    .team-group ul {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0;
+        border-left: 2px solid var(--text-info);        
+        padding-left: 0.5rem;
+    }
+
+    .team-group li {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }

@@ -1,0 +1,107 @@
+﻿@page "/Accounts/CompanyAccounts"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@rendermode RenderMode.InteractiveWebAssembly
+@layout Pages.Shared.Layout.PrivateSubLayout
+@inject CompanyManagementService CompanyManagementService
+@inject NavigationManager NavigationManager
+
+<!-- Notification Modal -->
+<Notification Result="@Notification" />
+
+<!-- Confirmation Modal -->
+<ConfirmationModal IsVisible="@isDeleteConfirmationVisible"
+                   Title="Confirm Deletion"
+                   Message="@($"Are you sure you want to delete the company {companyToDeleteName}?")"
+                   OnConfirm="ConfirmDelete"
+                   OnCancel="HideDeleteConfirmation" />
+
+<h3>Company Accounts</h3>
+
+<button class="btn btn-primary mb-3" @onclick="NavigateToCreateCompany">Create New Company Account</button>
+
+@if (!isDataLoaded)
+{
+    <LoadingIndicator Message="Fetching company data..." IsDark="false" />
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Company</th>
+                <th>Account Number</th>
+                <th>Industry</th>
+                <th>Description</th>
+                <th>Total Users</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var company in companies)
+            {
+                <tr>
+                    <td>@company.CompanyName</td>
+                    <td>@company.AccountNumber</td>
+                    <td>@company.IndustryType</td>
+                    <td>@company.Description</td>
+                    <td>@company.TotalUsers</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => NavigateToEditCompany(company.Id)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirmation(company.Id, company.CompanyName)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CompanyDTO> companies = new(); 
+    private bool isDeleteConfirmationVisible = false;
+    private string? companyToDeleteId;
+    private string? companyToDeleteName;
+    private bool isDataLoaded = false;
+    private ApiNotificationResultVM? Notification;
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await CompanyManagementService.GetAllCompaniesAsync();
+        isDataLoaded = true;
+    }
+
+    private void ShowDeleteConfirmation(string companyId, string companyName)
+    {
+        companyToDeleteId = companyId;
+        companyToDeleteName = companyName;
+        isDeleteConfirmationVisible = true;
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        isDeleteConfirmationVisible = false;
+        companyToDeleteId = string.Empty;
+        companyToDeleteName = string.Empty;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleteConfirmationVisible = false;
+        var result = await CompanyManagementService.DeleteCompanyAsync(companyToDeleteId);
+
+        if (result.IsSuccess)
+        {
+            companies = companies.Where(c => c.Id != companyToDeleteId).ToList();
+        }
+        Notification = result;
+    }
+
+    private void NavigateToCreateCompany()
+    {
+        NavigationManager.NavigateTo("/Accounts/Create-company");
+    }
+
+    private void NavigateToEditCompany(string companyId)
+    {
+        NavigationManager.NavigateTo($"/edit-company/{companyId}");
+    }       
+}

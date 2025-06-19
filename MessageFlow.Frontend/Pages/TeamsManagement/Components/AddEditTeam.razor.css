@@ -1,0 +1,33 @@
+﻿.max-300 {
+    width: 300px;
+}
+
+.border {
+    border: 3px solid var(--border-dark) !important;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    border-radius: 6px;
+}
+
+h5 {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+ul.list-group {
+    background-color: var(--bg-mid);
+    border: 0.2px solid var(--border-dark);
+    color: var(--text-light);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.scrollable-list-container {
+    min-height: 200px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.add-remove-usr-btn {
+    width: 130px;
+}

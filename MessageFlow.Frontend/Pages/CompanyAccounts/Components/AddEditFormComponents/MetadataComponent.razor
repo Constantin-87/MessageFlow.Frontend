@@ -1,0 +1,98 @@
+﻿@inject CompanyManagementService CompanyManagementService
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h5>Metadata Management</h5>
+    </div>
+    <div class="card-body">
+        <button class="btn btn-primary" @onclick="UpdateMetadata" title="Create pre-training metadata from company details.">
+            Update Company Metadata
+        </button>
+        <button class="btn btn-danger" @onclick="DeleteMetadata" title="Permanently remove the metadata associated with this company.">
+            Delete Company Metadata
+        </button>
+        <button class="btn btn-warning" @onclick="CreateCompanyIndex" title="Create or rebuild the Azure Search index for this company.">
+            Create Search Index
+        </button>
+
+        @if (CurrentState == LoadingState.CreatingIndex)
+        {
+            <LoadingIndicator Message="Creating search index..." IsDark="false" />
+        }
+        @if (CurrentState == LoadingState.CreatingMetadata)
+        {
+            <LoadingIndicator Message="Creating pre-training metadata..." IsDark="false" />
+        }
+        @if (CurrentState == LoadingState.LoadingMetadata)
+        {
+            <LoadingIndicator Message="Loading pre-training metadata..." IsDark="false" />
+        }
+        @if (CurrentState == LoadingState.DeletingMetadata)
+        {
+            <LoadingIndicator Message="Deleting pre-training metadata..." IsDark="false" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(CurrentMetadata))
+        {
+            <textarea class="form-control mt-2 scrollable" rows="10" readonly>@CurrentMetadata</textarea>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string CompanyId { get; set; } = string.Empty;
+    [Parameter] public EventCallback<ApiNotificationResultVM> OnActionCompleted { get; set; }
+
+    private enum LoadingState { None, CreatingIndex, CreatingMetadata, LoadingMetadata, DeletingMetadata }
+    private LoadingState CurrentState = LoadingState.None;
+    private string CurrentMetadata = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMetadata();
+    }
+
+    private async Task UpdateMetadata()
+    {
+        CurrentState =  LoadingState.CreatingMetadata;
+        var result = await CompanyManagementService.GenerateAndUploadCompanyMetadataAsync(CompanyId);
+        CurrentState = LoadingState.None;
+        await LoadMetadata();
+        await OnActionCompleted.InvokeAsync(result);
+    }
+
+    private async Task DeleteMetadata()
+    {
+        CurrentState = LoadingState.DeletingMetadata;
+        var result = await CompanyManagementService.DeleteCompanyMetadataAsync(CompanyId);
+        CurrentState = LoadingState.None;
+        await OnActionCompleted.InvokeAsync(result);
+
+        if (result.IsSuccess)
+            CurrentMetadata = string.Empty;
+    }
+
+    private async Task LoadMetadata()
+    {
+        CurrentState = LoadingState.LoadingMetadata;
+        var (result, metadata) = await CompanyManagementService.GetCompanyMetadataAsync(CompanyId);
+        CurrentState = LoadingState.None;
+
+        if (result.IsSuccess)
+        {
+            CurrentMetadata = metadata;
+        }
+        else if (!string.IsNullOrWhiteSpace(result.Message))
+        {
+            await OnActionCompleted.InvokeAsync(result);
+        }
+    }
+
+    private async Task CreateCompanyIndex()
+    {
+        CurrentState = LoadingState.CreatingIndex;
+        var result = await CompanyManagementService.CreateAzureAiSearchIndexAndUploadFilesAsync(CompanyId);
+        CurrentState = LoadingState.None;
+        await OnActionCompleted.InvokeAsync(result);
+    }
+}

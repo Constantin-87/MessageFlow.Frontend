@@ -1,0 +1,63 @@
+﻿@attribute [Authorize(Roles = "SuperAdmin, Admin")]
+@rendermode RenderMode.InteractiveWebAssembly
+@inject CompanyManagementService CompanyManagementService
+
+<h3>@Title</h3>
+
+<div class="mt-4 mb-3">
+    @foreach (var sec in Enum.GetValues<Section>())
+    {
+        <button class="btn btn-outline-secondary me-2"
+                @onclick="() => ToggleSection(sec)"
+                disabled="@(!IsEditMode && sec != Section.Details)">
+            @sec
+        </button>
+    }
+</div>
+
+@if (ActiveSection == Section.Details)
+{
+    <DetailsComponent Company="Company" IsEditMode="IsEditMode" OnActionCompleted="OnActionCompleted" />
+}
+@if (IsEditMode && ActiveSection == Section.Emails)
+{
+    <EmailsComponent Company="Company" OnActionCompleted="OnActionCompleted" />
+}
+@if (IsEditMode && ActiveSection == Section.Phones)
+{
+    <PhoneNumbersComponent Company="Company" OnActionCompleted="OnActionCompleted" />
+}
+@if (IsEditMode && ActiveSection == Section.Files)
+{
+    <FilesUploadComponent CompanyId="@Company.Id" OnActionCompleted="OnActionCompleted" />
+}
+@if (IsEditMode && ActiveSection == Section.Metadata)
+{
+    <MetadataComponent CompanyId="@Company.Id" OnActionCompleted="OnActionCompleted" />
+}
+
+@code {
+    [Parameter] public bool IsEditMode { get; set; } = false;
+    [Parameter] public string CompanyId { get; set; }
+    [Parameter] public EventCallback<ApiNotificationResultVM> OnActionCompleted { get; set; }
+
+    private string Title => IsEditMode ? $"Edit {Company.CompanyName} Details" : "Create New Company";
+    private enum Section { Details, Emails, Phones, Files, Metadata }
+    private Section ActiveSection = Section.Details;
+    private bool _isInitialized = false;
+    private CompanyDTO Company = new CompanyDTO();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_isInitialized) return;
+        if (string.IsNullOrEmpty(CompanyId)) return;
+        Company = await CompanyManagementService.GetCompanyByIdAsync(CompanyId) ?? new CompanyDTO();
+        _isInitialized = true;
+        await base.OnParametersSetAsync();
+    }
+
+    private void ToggleSection(Section section)
+    {
+        ActiveSection = section;
+    }
+}
