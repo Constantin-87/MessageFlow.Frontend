@@ -1,0 +1,64 @@
+name: Deploy Frontend to IIS (Test)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy-frontend:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Install wasm-tools workload
+      run: dotnet workload install wasm-tools
+
+    - name: Restore Dependencies
+      run: dotnet restore
+
+    - name: Build Frontend
+      run: dotnet build MessageFlow.Client/MessageFlow.Client.csproj -c Release
+
+    - name: Publish Frontend
+      run: dotnet publish MessageFlow.Client/MessageFlow.Client.csproj -c Release -o ${{ github.workspace }}/publish/Client
+
+    - name: Create appsettings.json
+      shell: pwsh
+      run: |
+        $path = "${{ github.workspace }}/publish/Client/wwwroot/appsettings.json"
+        echo '{
+          "IdentityApiUrl": "https://${{ vars.WEB_DEPLOY_DOMAIN_TEST }}/identity/",
+          "ServerApiUrl": "https://${{ vars.WEB_DEPLOY_DOMAIN_TEST }}/server/",
+          "SocialLinks": {
+            "LinkedIn": "https://www.linkedin.com/in/constantin-gavrila-dev/",
+            "Twitter": "https://twitter.com/DontHaveATwitterPage",
+            "GitHub": "https://github.com/Constantin-87",
+            "YouTube": "https://www.youtube.com/watch?v=xvFZjo5PgG0&ab_channel=Duran",
+            "Facebook": "https://www.facebook.com/profile.php?id=61566864236921"
+          }
+        }' | Out-File -FilePath $path -Encoding utf8 -Force
+
+    - name: Stop IIS (optional, only if required)
+      shell: pwsh
+      run: iisreset /stop
+
+    - name: Deploy Frontend to IIS
+      shell: cmd
+      run: |
+        "C:\Program Files (x86)\IIS\Microsoft Web Deploy V3\msdeploy.exe" ^
+        -verb:sync ^
+        -source:contentPath="${{ github.workspace }}\publish\Client\wwwroot" ^
+        -dest:contentPath="${{ vars.WEB_DEPLOY_PATH_TEST }}",computerName="https://${{ secrets.WEB_DEPLOY_SERVER_TEST }}:8172/msdeploy.axd?site=${{ vars.WEB_DEPLOY_SITE_TEST }}",userName="${{ secrets.WEB_DEPLOY_USER_TEST }}",password="${{ secrets.WEB_DEPLOY_PASSWORD_TEST }}",authType="Basic" ^
+        -allowUntrusted
+
+    - name: Start IIS
+      shell: pwsh
+      run: iisreset /start
